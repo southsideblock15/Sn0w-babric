@@ -39,6 +39,26 @@ I might return to update the client when major changes in the meta happen or if 
 # Where u will go
  im focusing on college where im studying digital forensics and my girlfriend whom i love very much. I also have a brand new pc and have been enjoying playing games I havent been able to play while ive been focused on anarchy. 
 
+
+
+# Credits:
+Main Developers:
+Skitttyy
+0IMAX (kami5)
+Auth:
+bon55
+Visual help:
+shoreline (loader)
+0x22 (shaders)
+
+Various clients i can think off the top of my head that ive skidded:
+Future dumps to make nametags work
+muffin for future announcer
+CliNet for the snapple facts
+icehack 
+3arth4ck for the rotations in 1.12 that work with future (didnt matter cuz got off future later) + some other stuff prob
+dont rmb any rest
+
  ## License
 MIT License
 
