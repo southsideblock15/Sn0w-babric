@@ -309,10 +309,6 @@ public class Nametags extends Module
         List<TextSection> sections = new ArrayList<>();
         String section = player.getName().getString();
 
-
-//        if (BotManager.INSTANCE.isSn0wUser(section))
-//            section = Formatting.AQUA + (FontModule.INSTANCE.isEnabled() ? "*" : KamiMod.NAME_UNICODE) + Formatting.RESET + section;
-
         if (entityId.getValue())
         {
             section += " ID: " + player.getId();

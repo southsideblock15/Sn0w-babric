@@ -299,7 +299,6 @@ public class Register
         CommandManager.INSTANCE.getCommands().add(new SpammerCommand());
         CommandManager.INSTANCE.getCommands().add(new SearchCommand());
         CommandManager.INSTANCE.getCommands().add(new ChamsCommand());
-        CommandManager.INSTANCE.getCommands().add(new GetUsersCommand());
         CommandManager.INSTANCE.getCommands().add(new ClearPopsCommand());
         CommandManager.INSTANCE.getCommands().add(new AutoRegearCommand());
         CommandManager.INSTANCE.getCommands().add(new WaypointCommand());

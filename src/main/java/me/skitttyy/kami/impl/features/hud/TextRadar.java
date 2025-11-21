@@ -74,7 +74,6 @@ public class TextRadar extends HudComponent
 
         this.width = (30);
         List<Entity> players = new ArrayList<>(TargetUtils.getPlayers().toList());
-//        players.sort((o1, o2) -> Boolean.compare(!BotManager.INSTANCE.isSn0wUser(o1.getName().getString()), !BotManager.INSTANCE.isSn0wUser(o2.getName().getString())));
 
 
         boolean fake = mc.currentScreen instanceof HudEditor;
@@ -109,12 +108,9 @@ public class TextRadar extends HudComponent
             {
                 text += Formatting.RESET + player.getName().getString() + " " + PlayerUtils.getColoredDistance((PlayerEntity) player) + ((int) MathUtil.round(mc.player.distanceTo(player), 0));
             }
-//            if (BotManager.INSTANCE.isSn0wUser(player.getName().getString()))
-//            {
-//                text = Formatting.AQUA + (FontModule.INSTANCE.isEnabled() ? "*" : KamiMod.NAME_UNICODE) + " " + Formatting.RESET + text;
-//            }
+
             int pops = PopManager.INSTANCE.getPops(player);
-            String popstring = Formatting.WHITE + " -";
+            String popstring;
             if (pops < 1)
             {
                 popstring = "";
