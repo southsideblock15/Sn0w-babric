@@ -19,12 +19,12 @@ public class KamiMod implements ModInitializer
     public static long START_TIME = System.currentTimeMillis();
 
     public static String NAME = "Sn0w";
-    public final static String VERSION = "2.1.2+1";
+    public final static String VERSION = "2.1.2+2";
 
     /**
      * Git hash of the client
      */
-    public static final String HASH = "80b84b45f9baf806";
+    public static final String HASH = "93fab48fb36f6c76";
 
     /**
      * The snowflake text ❄

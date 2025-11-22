@@ -9,6 +9,7 @@ import me.skitttyy.kami.api.event.events.render.*;
 import me.skitttyy.kami.api.feature.module.Module;
 import me.skitttyy.kami.api.management.FriendManager;
 import me.skitttyy.kami.api.management.shaders.ShaderManager;
+import me.skitttyy.kami.api.utils.chat.ChatUtils;
 import me.skitttyy.kami.api.utils.color.Sn0wColor;
 import me.skitttyy.kami.api.utils.math.MathUtil;
 import me.skitttyy.kami.api.utils.render.RenderUtil;
@@ -55,8 +56,7 @@ import java.nio.IntBuffer;
 import java.util.Optional;
 import java.util.UUID;
 
-public class Shaders extends Module
-{
+public class Shaders extends Module {
     private float shaderTime;
 
     private int textureId;
@@ -175,7 +175,6 @@ public class Shaders extends Module
             .register(this);
 
 
-
     public Value<Number> glowRadius = new ValueBuilder<Number>()
             .withDescriptor("Intensity")
             .withValue(0.3f)
@@ -188,7 +187,7 @@ public class Shaders extends Module
     public Value<String> fillMode = new ValueBuilder<String>()
             .withDescriptor("Fill", "fillTag")
             .withValue("Off")
-            .withModes("Off", "Default", "Rainbow")
+            .withModes("Off", "Default", "Rainbow", "Image")
             .register(this);
     public Value<Number> transparency = new ValueBuilder<Number>()
             .withDescriptor("Transparency")
@@ -224,10 +223,8 @@ public class Shaders extends Module
             .register(this);
 
 
-
 // Add existing ones
 // players, animals, monsters, others...
-
 
 
     public Value<Boolean> friends = new ValueBuilder<Boolean>()
@@ -277,8 +274,7 @@ public class Shaders extends Module
 
     public static Shaders INSTANCE;
 
-    public Shaders()
-    {
+    public Shaders() {
         super("Shaders", Category.Render);
         INSTANCE = this;
         image.setActive(false);
@@ -286,39 +282,33 @@ public class Shaders extends Module
 
 
     @Override
-    public void onEnable()
-    {
+    public void onEnable() {
         super.onEnable();
 
         File chams = new File(MinecraftClient.getInstance().runDirectory.getAbsolutePath(), File.separator + "Sn0w" + File.separator + "chams" + File.separator + image.getValue());
 
-        if (chams.exists())
-        {
-            loadShaderImage(chams);
+        if (chams.exists()) {
+            loadShaderImage();
         }
         ignoreEntityRender = false;
     }
 
 
     @SubscribeEvent
-    public void onGameJoin(ServerEvent.ServerJoined event)
-    {
-        if (fillMode.getValue().equals("Image"))
-        {
+    public void onGameJoin(ServerEvent.ServerJoined event) {
+        if (fillMode.getValue().equals("Image")) {
+
+            loadShaderImage();
         }
     }
 
     @SubscribeEvent
-    public void onRenderEntityWorld(RenderShaderEvent event)
-    {
+    public void onRenderEntityWorld(RenderShaderEvent event) {
         ShaderManager.INSTANCE.reloadShaders();
-        switch (fillMode.getValue())
-        {
-            case "Default", "Off" ->
-            {
+        switch (fillMode.getValue()) {
+            case "Default", "Off" -> {
                 final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getDefaultShaderEffect();
-                if (shaderEffect == null)
-                {
+                if (shaderEffect == null) {
                     return;
                 }
                 ShaderManager.INSTANCE.applyShader(shaderEffect, () ->
@@ -336,11 +326,31 @@ public class Shaders extends Module
                     renderEntities(event.getTickDelta(), event.getMatrices());
                 });
             }
-            case "Rainbow" ->
-            {
-                final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getRainbowShaderEffect();
-                if (shaderEffect == null)
+            case "Image" -> {
+                final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getImageShaderEffect();
+                if (shaderEffect == null) {
+                    return;
+                }
+                ShaderManager.INSTANCE.applyShader(shaderEffect, () ->
                 {
+                    GlStateManager._activeTexture(GL32C.GL_TEXTURE0 + 1);
+                    GlStateManager._bindTexture(textureId);
+                    shaderEffect.setUniformValue("resolution", (float) mc.getWindow().getScaledWidth(), (float) mc.getWindow().getScaledHeight());
+                    shaderEffect.setUniformValue("glowThickness", width.getValue().intValue());
+                    shaderEffect.setUniformValue("fillColor", 1.0f, 1.0f, 1.0f, !fillMode.getValue().equals("Off") ? transparency.getValue().floatValue() : 0.0f);
+                    shaderEffect.setUniformValue("imageTexture", 1);
+                    shaderEffect.setUniformValue("texelSize", 1.0f / mc.getWindow().getScaledWidth(), 1.0f / mc.getWindow().getScaledHeight());
+                    shaderEffect.setUniformValue("glowSampleStep", outlineQuality.getValue().intValue());
+                    shaderEffect.setUniformValue("glowIntensityScale", glowRadius.getValue().floatValue());
+                    shaderEffect.render(mc.getRenderTickCounter().getTickDelta(true));
+                }, () ->
+                {
+                    renderEntities(event.getTickDelta(), event.getMatrices());
+                });
+            }
+            case "Rainbow" -> {
+                final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getRainbowShaderEffect();
+                if (shaderEffect == null) {
                     return;
                 }
                 ShaderManager.INSTANCE.applyShader(shaderEffect, () ->
@@ -368,21 +378,17 @@ public class Shaders extends Module
 
 
     @SubscribeEvent
-    public void onRenderCrystal(RenderCrystalEvent event)
-    {
+    public void onRenderCrystal(RenderCrystalEvent event) {
         if (mc.player != null && !texture.getValue() && !ignoreEntityRender &&
-                mc.player.squaredDistanceTo(event.endCrystalEntity) <= MathUtil.square(renderDistance.getValue().doubleValue()))
-        {
+                mc.player.squaredDistanceTo(event.endCrystalEntity) <= MathUtil.square(renderDistance.getValue().doubleValue())) {
             event.setCancelled(true);
         }
     }
 
     @SubscribeEvent
-    public void onRenderEntity(RenderEntityEvent event)
-    {
+    public void onRenderEntity(RenderEntityEvent event) {
         if (mc.player == null || texture.getValue() || !checkShaders(event.entity) || ignoreEntityRender
-                || mc.player.squaredDistanceTo(event.entity) > MathUtil.square(renderDistance.getValue().doubleValue()))
-        {
+                || mc.player.squaredDistanceTo(event.entity) > MathUtil.square(renderDistance.getValue().doubleValue())) {
             return;
         }
         event.setCancelled(true);
@@ -408,23 +414,18 @@ public class Shaders extends Module
 //        event.cancel();
 //    }
 
-    private void renderEntities(float tickDelta, MatrixStack matrixStack)
-    {
+    private void renderEntities(float tickDelta, MatrixStack matrixStack) {
         matrixStack.push();
         ignoreEntityRender = true;
-        for (Entity entity : mc.world.getEntities())
-        {
+        for (Entity entity : mc.world.getEntities()) {
 
-            if (!RenderUtil.isFrustumVisible(entity.getBoundingBox()))
-            {
+            if (!RenderUtil.isFrustumVisible(entity.getBoundingBox())) {
                 continue;
             }
 
-            if (checkShaders(entity))
-            {
+            if (checkShaders(entity)) {
                 Vec3d start = mc.gameRenderer.getCamera().getPos();
-                if (start.squaredDistanceTo(entity.getPos()) > MathUtil.square(renderDistance.getValue().doubleValue()))
-                {
+                if (start.squaredDistanceTo(entity.getPos()) > MathUtil.square(renderDistance.getValue().doubleValue())) {
                     continue;
                 }
 
@@ -437,40 +438,33 @@ public class Shaders extends Module
                 EntityRenderer<Entity> entityRenderer = (EntityRenderer<Entity>) mc.getEntityRenderDispatcher().getRenderer(entity);
                 VertexConsumerProvider vertexConsumerProvider = ShaderManager.INSTANCE.createVertexConsumers(((IWorldRenderer) mc.worldRenderer).hookGetBufferBuilders().getEntityVertexConsumers(), color);
                 int light = mc.getEntityRenderDispatcher().getLight(entity, tickDelta);
-                try
-                {
+                try {
                     Vec3d vec3d = entityRenderer.getPositionOffset(entity, tickDelta);
                     double x = (d - camera.x) + vec3d.x;
                     double y = (e - camera.y) + vec3d.y;
                     double z = (f - camera.z) + vec3d.z;
                     matrixStack.push();
                     if (Chams.INSTANCE.isEnabled() && (entity instanceof LivingEntity entity1
-                            && Chams.INSTANCE.checkChams(entity1) || entity instanceof EndCrystalEntity && Chams.INSTANCE.crystals.getValue()))
-                    {
+                            && Chams.INSTANCE.checkChams(entity1) || entity instanceof EndCrystalEntity && Chams.INSTANCE.crystals.getValue())) {
                         Chams.INSTANCE.renderEntityChams(matrixStack, entity, tickDelta);
-                    } else
-                    {
+                    } else {
                         matrixStack.translate(x, y, z);
                         entityRenderer.render(entity, g, tickDelta, matrixStack, vertexConsumerProvider, light);
                         matrixStack.translate(-vec3d.getX(), -vec3d.getY(), -vec3d.getZ());
                     }
                     matrixStack.pop();
-                } catch (Exception exception)
-                {
+                } catch (Exception exception) {
                     exception.printStackTrace();
                 }
             }
             RenderBuffers.postRender();
 
             // Blockentity shaders
-            if (eChests.getValue() || chests.getValue() || shulkers.getValue())
-            {
-                for (BlockEntity blockEntity : BlockUtils.getBlockEntities())
-                {
+            if (eChests.getValue() || chests.getValue() || shulkers.getValue()) {
+                for (BlockEntity blockEntity : BlockUtils.getBlockEntities()) {
                     Color color = getStorageESPColor(blockEntity);
                     VertexConsumerProvider vertexConsumerProvider = ShaderManager.INSTANCE.createVertexConsumers(((IWorldRenderer) mc.worldRenderer).hookGetBufferBuilders().getEntityVertexConsumers(), color);
-                    if (checkStorageShaders(blockEntity))
-                    {
+                    if (checkStorageShaders(blockEntity)) {
                         Vec3d vec3d = mc.gameRenderer.getCamera().getPos();
                         double d = vec3d.getX();
                         double e = vec3d.getY();
@@ -501,20 +495,15 @@ public class Shaders extends Module
     }
 
     @SubscribeEvent
-    public void onReloadShader(RenderHandEvent event)
-    {
-        if (!hands.getValue())
-        {
+    public void onReloadShader(RenderHandEvent event) {
+        if (!hands.getValue()) {
             return;
         }
 
-        switch (fillMode.getValue())
-        {
-            case "Default", "Off" ->
-            {
+        switch (fillMode.getValue()) {
+            case "Default", "Off" -> {
                 final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getDefaultShaderEffect();
-                if (shaderEffect == null)
-                {
+                if (shaderEffect == null) {
                     return;
                 }
                 ShaderManager.INSTANCE.applyShader(shaderEffect, () ->
@@ -526,6 +515,7 @@ public class Shaders extends Module
                     shaderEffect.setUniformValue("texelSize", 1.0f / mc.getWindow().getScaledWidth(), 1.0f / mc.getWindow().getScaledHeight());
                     shaderEffect.setUniformValue("glowSampleStep", outlineQuality.getValue().intValue());
                     shaderEffect.setUniformValue("glowIntensityScale", glowRadius.getValue().floatValue());
+
                     shaderEffect.render(mc.getRenderTickCounter().getTickDelta(true));
                 }, () ->
                 {
@@ -534,11 +524,33 @@ public class Shaders extends Module
                     ignoreEntityRender = false;
                 });
             }
-            case "Rainbow" ->
-            {
-                final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getRainbowShaderEffect();
-                if (shaderEffect == null)
+            case "Image" -> {
+                final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getImageShaderEffect();
+                if (shaderEffect == null) {
+                    return;
+                }
+                ShaderManager.INSTANCE.applyShader(shaderEffect, () ->
                 {
+                    GlStateManager._activeTexture(GL32C.GL_TEXTURE0 + 1);
+                    GlStateManager._bindTexture(textureId);
+                    shaderEffect.setUniformValue("resolution", (float) mc.getWindow().getScaledWidth(), (float) mc.getWindow().getScaledHeight());
+                    shaderEffect.setUniformValue("glowThickness", width.getValue().intValue());
+                    shaderEffect.setUniformValue("fillColor", 1.0f, 1.0f, 1.0f, !fillMode.getValue().equals("Off") ? transparency.getValue().floatValue() : 0.0f);
+                    shaderEffect.setUniformValue("imageTexture", 1);
+                    shaderEffect.setUniformValue("texelSize", 1.0f / mc.getWindow().getScaledWidth(), 1.0f / mc.getWindow().getScaledHeight());
+                    shaderEffect.setUniformValue("glowSampleStep", outlineQuality.getValue().intValue());
+                    shaderEffect.setUniformValue("glowIntensityScale", glowRadius.getValue().floatValue());
+                    shaderEffect.render(mc.getRenderTickCounter().getTickDelta(true));
+                }, () ->
+                {
+                    ignoreEntityRender = true;
+                    ((IGameRenderer) mc.gameRenderer).doRenderHand(mc.gameRenderer.getCamera(), event.getTickDelta(), event.getMatrices().peek().getPositionMatrix());
+                    ignoreEntityRender = false;
+                });
+            }
+            case "Rainbow" -> {
+                final ManagedShaderEffect shaderEffect = ShaderManager.INSTANCE.getRainbowShaderEffect();
+                if (shaderEffect == null) {
                     return;
                 }
                 ShaderManager.INSTANCE.applyShader(shaderEffect, () ->
@@ -566,51 +578,35 @@ public class Shaders extends Module
         }
     }
 
+    public boolean loadShaderImage() {
+        try {
 
-    /**
-     * Loads the shader image from memory. The image is loaded from the Shoreline folder.
-     */
-    public boolean loadShaderImage(File file)
-    {
-        try
-        {
             ByteBuffer data = null;
-            String[] fileFormats = new String[]{"png", "jpg"};
-            for (String fileFormat : fileFormats)
-            {
-                File shaderFile = file;
-                if (shaderFile.exists())
-                {
-                    FileInputStream fileInputStream = new FileInputStream(shaderFile);
-                    data = TextureUtil.readResource(fileInputStream);
-                    break;
-                } else
-                {
-                    Optional<Resource> optional = mc.getResourceManager().getResource(Identifier.of("shoreline", "shaders/shader." + fileFormat));
-                    if (optional.isEmpty() || optional.get().getInputStream() == null)
-                    {
-                        continue;
-                    }
+            File chams = new File(MinecraftClient.getInstance().runDirectory.getAbsolutePath(), File.separator + "Sn0w" + File.separator + "chams" + File.separator + image.getValue());
+
+            if (chams.exists()) {
+                FileInputStream fileInputStream = new FileInputStream(chams);
+                data = TextureUtil.readResource(fileInputStream);
+            } else {
+                try {
+                    Optional<Resource> optional = mc.getResourceManager().getResource(Identifier.of("kami", "chams/img.png"));
                     data = TextureUtil.readResource(optional.get().getInputStream());
-                    break;
+                } catch (Exception e) {
                 }
             }
-            if (data == null)
-            {
+            if (data == null) {
                 return false;
             }
 
             data.rewind();
-            try (MemoryStack stack = MemoryStack.stackPush())
-            {
+            try (MemoryStack stack = MemoryStack.stackPush()) {
                 IntBuffer width = stack.mallocInt(1);
                 IntBuffer height = stack.mallocInt(1);
                 IntBuffer comp = stack.mallocInt(1);
 
                 STBImage.stbi_set_flip_vertically_on_load(true);
                 ByteBuffer image = STBImage.stbi_load_from_memory(data, width, height, comp, 3);
-                if (image == null)
-                {
+                if (image == null) {
                     return false;
                 }
 
@@ -636,73 +632,57 @@ public class Shaders extends Module
                 STBImage.stbi_image_free(image);
                 STBImage.stbi_set_flip_vertically_on_load(false);
             }
-        } catch (IOException e)
-        {
+        } catch (IOException e) {
             e.printStackTrace();
             return false;
         }
         return true;
     }
 
-    public Color getESPColor(Entity entity)
-    {
-        if (entity instanceof PlayerEntity player)
-        {
-            if (entity == mc.player)
-            {
+    public Color getESPColor(Entity entity) {
+        if (entity instanceof PlayerEntity player) {
+            if (entity == mc.player) {
                 return selfColor.getValue().getColor();
             }
-            if (friends.getValue() && FriendManager.INSTANCE.isFriend(player))
-            {
+            if (friends.getValue() && FriendManager.INSTANCE.isFriend(player)) {
                 return Nametags.INSTANCE.friendsColor.getValue().getColor();
             }
             return playersColor.getValue().getColor();
         }
-        if (EntityUtils.isMonster(entity))
-        {
+        if (EntityUtils.isMonster(entity)) {
             return monstersColor.getValue().getColor();
         }
-        if (EntityUtils.isNeutral(entity) || EntityUtils.isPassive(entity))
-        {
+        if (EntityUtils.isNeutral(entity) || EntityUtils.isPassive(entity)) {
             return animalsColor.getValue().getColor();
         }
-        if (entity instanceof EndCrystalEntity)
-        {
+        if (entity instanceof EndCrystalEntity) {
             return crystalsColor.getValue().getColor();
         }
-        if (entity instanceof ItemEntity)
-        {
+        if (entity instanceof ItemEntity) {
             return itemsColor.getValue().getColor();
         }
         if (entity instanceof ExperienceBottleEntity
-                || entity instanceof EnderPearlEntity)
-        {
+                || entity instanceof EnderPearlEntity) {
             return projectilesColor.getValue().getColor();
         }
         return null;
     }
 
-    public Color getStorageESPColor(BlockEntity tileEntity)
-    {
-        if (tileEntity instanceof ChestBlockEntity chestBlockEntity)
-        {
+    public Color getStorageESPColor(BlockEntity tileEntity) {
+        if (tileEntity instanceof ChestBlockEntity chestBlockEntity) {
             return chestsColor.getValue().getColor();
         }
-        if (tileEntity instanceof EnderChestBlockEntity)
-        {
+        if (tileEntity instanceof EnderChestBlockEntity) {
             return echestsColor.getValue().getColor();
         }
-        if (tileEntity instanceof ShulkerBoxBlockEntity)
-        {
+        if (tileEntity instanceof ShulkerBoxBlockEntity) {
             return shulkersColor.getValue().getColor();
         }
         return null;
     }
 
-    public boolean checkShaders(Entity entity)
-    {
-        if (entity instanceof PlayerEntity && players.getValue())
-        {
+    public boolean checkShaders(Entity entity) {
+        if (entity instanceof PlayerEntity && players.getValue()) {
             return self.getValue() && (!mc.options.getPerspective().isFirstPerson()) || entity != mc.player;
         }
         return ((EntityUtils.isMonster(entity) && monsters.getValue()
@@ -713,16 +693,14 @@ public class Shaders extends Module
                 || entity instanceof EnderPearlEntity && projectiles.getValue()) || others.getValue();
     }
 
-    private boolean checkStorageShaders(BlockEntity blockEntity)
-    {
+    private boolean checkStorageShaders(BlockEntity blockEntity) {
         return blockEntity instanceof ChestBlockEntity && chests.getValue()
                 || blockEntity instanceof EnderChestBlockEntity && eChests.getValue()
                 || blockEntity instanceof ShulkerBoxBlockEntity && shulkers.getValue();
     }
 
     @Override
-    public String getDescription()
-    {
+    public String getDescription() {
         return "Shaders: render cool fragment shaders over stuff (change image with \"-chams load copenn.png\"";
     }
 }

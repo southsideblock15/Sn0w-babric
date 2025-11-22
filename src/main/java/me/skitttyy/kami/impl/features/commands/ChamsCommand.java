@@ -40,11 +40,11 @@ public class ChamsCommand extends Command {
 
     private static void openDirectory()
     {
-        File spammerFile = new File(MinecraftClient.getInstance().runDirectory.getAbsolutePath(), File.separator + "Sn0w" + File.separator + "chams" + File.separator);
+        File chamsFile = new File(MinecraftClient.getInstance().runDirectory.getAbsolutePath(), File.separator + "Sn0w" + File.separator + "chams" + File.separator);
 
-        if (!spammerFile.exists()) spammerFile.mkdir();
+        if (!chamsFile.exists()) chamsFile.mkdir();
 
-        Util.getOperatingSystem().open(spammerFile);
+        Util.getOperatingSystem().open(chamsFile);
     }
 
     private void handleSetFile(String[] args)
@@ -55,12 +55,12 @@ public class ChamsCommand extends Command {
             ChatUtils.sendMessage(Formatting.AQUA + "[Chams]" + Formatting.BLUE + " File does not exist!");
         } else
         {
-            if (!Shaders.INSTANCE.loadShaderImage(chams))
+            Shaders.INSTANCE.image.setValue(args[2]);
+            if (!Shaders.INSTANCE.loadShaderImage())
             {
                 ChatUtils.sendMessage(Formatting.AQUA + "[Chams]" + Formatting.RED + " invalid image!");
             } else
             {
-                Shaders.INSTANCE.image.setValue(args[2]);
                 ChatUtils.sendMessage(Formatting.AQUA + "[Chams]" + Formatting.AQUA + " set chams image!");
             }
         }

@@ -34,6 +34,7 @@ public class ShaderManager implements IMinecraft
     private ShaderFramebuffer framebuffer;
 
     public ManagedShaderEffect defaultShaderEffect;
+    public ManagedShaderEffect imageShaderEffect;
     public ManagedShaderEffect rainbowShaderEffect;
 
     public ShaderManager()
@@ -55,6 +56,7 @@ public class ShaderManager implements IMinecraft
     {
         framebuffer = new ShaderFramebuffer(mc.getFramebuffer().textureWidth, mc.getFramebuffer().textureHeight);
         defaultShaderEffect = ShaderEffectManager.getInstance().manage(Identifier.of("kami", "shaders/post/default.json"));
+        imageShaderEffect = ShaderEffectManager.getInstance().manage(Identifier.of("kami", "shaders/post/image.json"));
         rainbowShaderEffect = ShaderEffectManager.getInstance().manage(Identifier.of("kami", "shaders/post/rainbow.json"));
 
     }
