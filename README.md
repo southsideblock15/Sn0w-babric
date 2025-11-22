@@ -44,7 +44,7 @@ Future dumps to make nametags work
 muffin for future announcer
 CliNet for the snapple facts
 icehack
-Meteor Client: freecam crystal utils
+Meteor Client: freecam, and crystal utils (prob more i forgot)
 XaeroPlus: New chunks detector
 3arth4ck for the rotations in 1.12 that work with future (didnt matter cuz got off future later) + some other stuff prob
 dont rmb any rest
